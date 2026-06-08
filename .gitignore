@@ -1,0 +1,17 @@
+.DS_Store
+
+.derivedData/
+
+DerivedData/
+
+build/
+
+Build/
+
+xcuserdata/
+
+*.xcuserstate
+
+.swiftpm/
+
+MacCheck.xcodeproj/xcuserdata/
