@@ -39,6 +39,7 @@ final class AppStore {
 
         self.entitlementManager = entitlementManager
         self.storeKitManager = storeKitManager
+        print("[StoreKit] AppStore wired manager instance=\(ObjectIdentifier(storeKitManager))")
         self.batteryService = batteryService
         self.storageService = storageService
         self.memoryService = memoryService

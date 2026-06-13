@@ -27,9 +27,7 @@ struct HistoryView: View {
                 viewModel.refresh()
             }
         }
-        .sheet(isPresented: $showPaywall) {
-            ProPaywallView()
-        }
+        .proPaywallSheet(isPresented: $showPaywall)
     }
 
     // MARK: - Content

@@ -27,6 +27,7 @@
 		BBD64B192FCCB30B00F41CFC /* MacCheck.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacCheck.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBD64B262FCCB30C00F41CFC /* MacCheckTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacCheckTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBD64B302FCCB30C00F41CFC /* MacCheckUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacCheckUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BBD64B432FCCB30C00F41CFC /* MacCheck.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = MacCheck.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +76,7 @@
 		BBD64B102FCCB30B00F41CFC = {
 			isa = PBXGroup;
 			children = (
+				BBD64B432FCCB30C00F41CFC /* MacCheck.storekit */,
 				BBD64B1B2FCCB30B00F41CFC /* MacCheck */,
 				BBD64B292FCCB30C00F41CFC /* MacCheckTests */,
 				BBD64B332FCCB30C00F41CFC /* MacCheckUITests */,
@@ -397,7 +399,7 @@
 				CODE_SIGN_ENTITLEMENTS = MacCheck/MacCheck.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = GP2XL49M9Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -431,7 +433,7 @@
 				CODE_SIGN_ENTITLEMENTS = MacCheck/MacCheck.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = GP2XL49M9Z;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;

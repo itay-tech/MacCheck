@@ -7,6 +7,7 @@ import StoreKit
 final class StoreKitManager: ObservableObject {
 
     static let lifetimeProductID = "com.raytech.MacCheck.pro.lifetime"
+    static let productLoadFailureMessage = "Unable to load purchase information."
 
     static var allProductIDs: [String] {
         [lifetimeProductID]
@@ -15,17 +16,25 @@ final class StoreKitManager: ObservableObject {
     @Published private(set) var lifetimeProduct: Product?
     @Published private(set) var isLoadingProducts = false
     @Published private(set) var isPurchasing = false
+    @Published private(set) var productLoadError: String?
     @Published private(set) var purchaseError: String?
     @Published private(set) var purchaseSuccessMessage: String?
     @Published private(set) var restoreNotice: String?
 
     private let entitlementManager: EntitlementManager
     private var transactionListener: Task<Void, Never>?
+    private var productLoadTask: Task<Void, Never>?
+    private var hasAttemptedProductLoad = false
+    private(set) var lastRequestedProductIDs: [String] = []
+    private(set) var lastLoadedProductsCount = 0
+    private(set) var lastReturnedProductIDs: [String] = []
+    private(set) var lastProductLoadErrorDescription: String?
 
     init(entitlementManager: EntitlementManager) {
         self.entitlementManager = entitlementManager
         transactionListener = listenForTransactionUpdates()
 
+        print("[StoreKit] Startup instance=\(ObjectIdentifier(self))")
         Task {
             await start()
         }
@@ -33,6 +42,7 @@ final class StoreKitManager: ObservableObject {
 
     deinit {
         transactionListener?.cancel()
+        productLoadTask?.cancel()
     }
 
     var displayPrice: String {
@@ -43,31 +53,115 @@ final class StoreKitManager: ObservableObject {
         lifetimeProduct != nil && !isPurchasing
     }
 
+    var purchaseButtonDisabledReason: String {
+        if entitlementManager.isPro {
+            return "User already owns Pro"
+        }
+        if isPurchasing {
+            return "Purchase in progress"
+        }
+        if isLoadingProducts {
+            return "Products still loading"
+        }
+        if lifetimeProduct == nil {
+            if let productLoadError {
+                return productLoadError
+            }
+            if hasAttemptedProductLoad {
+                return "Product unavailable after load attempt"
+            }
+            return "Products not loaded yet"
+        }
+        return "Enabled"
+    }
+
+    var storeKitConfigurationHint: String {
+        let environment = ProcessInfo.processInfo.environment
+        let candidateKeys = [
+            "STOREKIT_CONFIGURATION_FILE_PATH",
+            "IDEStoreKitConfigurationPath",
+            "XCODE_STOREKIT_CONFIGURATION_PATH"
+        ]
+
+        for key in candidateKeys {
+            if let value = environment[key], !value.isEmpty {
+                return "detected via \(key): \(value)"
+            }
+        }
+
+        return "not detectable at runtime (use Xcode Run with Scheme → Run → Options → StoreKit Configuration = MacCheck.storekit)"
+    }
+
     // MARK: - Startup
 
     func start() async {
-        await loadProducts()
+        await loadProductsIfNeeded()
         await refreshEntitlements()
     }
 
-    func loadProducts() async {
-        isLoadingProducts = true
-        defer { isLoadingProducts = false }
-
-        do {
-            let products = try await Product.products(for: Self.allProductIDs)
-            lifetimeProduct = products.first(where: { $0.id == Self.lifetimeProductID })
-        } catch {
-            lifetimeProduct = nil
-            purchaseError = "Unable to load App Store pricing."
+    /// Loads products once, or waits for an in-flight load. Safe to call from paywall onAppear.
+    func loadProductsIfNeeded(force: Bool = false) async {
+        if !force, lifetimeProduct != nil {
+            print("[StoreKit] Product already cached: \(Self.lifetimeProductID)")
+            printPaywallDiagnostics(context: "loadProductsIfNeeded skipped (cached)")
+            return
         }
+
+        if let productLoadTask {
+            print("[StoreKit] Waiting for in-flight product load")
+            await productLoadTask.value
+            printPaywallDiagnostics(context: "loadProductsIfNeeded waited for in-flight load")
+            return
+        }
+
+        let task = Task { @MainActor in
+            await performProductLoad(force: force)
+        }
+        productLoadTask = task
+        await task.value
+        productLoadTask = nil
+    }
+
+    /// Backward-compatible entry point used by callers expecting an unconditional reload attempt.
+    func loadProducts() async {
+        await loadProductsIfNeeded(force: true)
+    }
+
+    func printPaywallDiagnostics(context: String) {
+        print("[Paywall] Diagnostics (\(context))")
+        print("[StoreKit] instance=\(ObjectIdentifier(self))")
+        print("[StoreKit] StoreKit configuration: \(storeKitConfigurationHint)")
+        print("[StoreKit] Requested product IDs: \(lastRequestedProductIDs.isEmpty ? Self.allProductIDs : lastRequestedProductIDs)")
+        print("[StoreKit] Products loaded: \(lastLoadedProductsCount)")
+        print("[StoreKit] Product IDs returned: \(lastReturnedProductIDs)")
+        if let product = lifetimeProduct {
+            print("[StoreKit] Found product: \(product.id) (\(product.displayPrice))")
+        } else if hasAttemptedProductLoad {
+            print("[StoreKit] Missing expected product: \(Self.lifetimeProductID)")
+        }
+        if let lastProductLoadErrorDescription {
+            print("[StoreKit] Product load error: \(lastProductLoadErrorDescription)")
+        }
+        print("[Paywall] lifetimeProduct == nil: \(lifetimeProduct == nil)")
+        print("[Paywall] isLoadingProducts: \(isLoadingProducts)")
+        print("[Paywall] isPurchasing: \(isPurchasing)")
+        print("[Paywall] canPurchase: \(canPurchase)")
+        print("[Paywall] Disabled reason: \(purchaseButtonDisabledReason)")
+        print("[Paywall] productLoadError: \(productLoadError ?? "nil")")
+        print("[Paywall] Purchase button \(canPurchase ? "enabled" : "disabled")")
+        print("[StoreKit] Current entitlement state: isPro=\(entitlementManager.isPro)")
     }
 
     // MARK: - Purchase
 
     func purchaseLifetime() async {
+        if lifetimeProduct == nil {
+            await loadProductsIfNeeded(force: true)
+        }
+
         guard let product = lifetimeProduct else {
-            purchaseError = "Product unavailable. Please try again later."
+            purchaseError = Self.productLoadFailureMessage
+            printPaywallDiagnostics(context: "purchaseLifetime blocked")
             return
         }
 
@@ -141,9 +235,58 @@ final class StoreKitManager: ObservableObject {
         }
 
         entitlementManager.applyOwnership(isPro: ownsLifetime)
+        print("[StoreKit] Current entitlement state: isPro=\(ownsLifetime)")
     }
 
     // MARK: - Private
+
+    private func performProductLoad(force: Bool) async {
+        isLoadingProducts = true
+        productLoadError = nil
+        defer {
+            isLoadingProducts = false
+            hasAttemptedProductLoad = true
+        }
+
+        let requestedIDs = Self.allProductIDs
+        lastRequestedProductIDs = requestedIDs
+        lastProductLoadErrorDescription = nil
+
+        print("[StoreKit] Requesting products: \(requestedIDs)")
+
+        do {
+            let products = try await Product.products(for: requestedIDs)
+            lastLoadedProductsCount = products.count
+            lastReturnedProductIDs = products.map(\.id)
+
+            print("[StoreKit] Products loaded: \(products.count)")
+            print("[StoreKit] Product IDs returned: \(lastReturnedProductIDs)")
+
+            if let product = products.first(where: { $0.id == Self.lifetimeProductID }) {
+                lifetimeProduct = product
+                productLoadError = nil
+                print("[StoreKit] Found product: \(product.id) (\(product.displayPrice))")
+            } else {
+                if lifetimeProduct == nil {
+                    productLoadError = Self.productLoadFailureMessage
+                } else {
+                    print("[StoreKit] Reload returned 0 matching products; keeping cached product")
+                }
+                print("[StoreKit] Missing expected product: \(Self.lifetimeProductID)")
+            }
+        } catch {
+            lastLoadedProductsCount = 0
+            lastReturnedProductIDs = []
+            lastProductLoadErrorDescription = error.localizedDescription
+
+            if lifetimeProduct == nil {
+                productLoadError = Self.productLoadFailureMessage
+            } else {
+                print("[StoreKit] Reload failed; keeping cached product")
+            }
+            print("[StoreKit] Product load failed: \(error.localizedDescription)")
+        }
+    }
 
     private func listenForTransactionUpdates() -> Task<Void, Never> {
         Task.detached(priority: .background) { [weak self] in

@@ -26,9 +26,7 @@ struct DashboardView: View {
             .navigationTitle("MacCheck")
             .toolbar { toolbarContent }
         }
-        .sheet(isPresented: $showPaywall) {
-            ProPaywallView()
-        }
+        .proPaywallSheet(isPresented: $showPaywall)
         .task {
             viewModel.loadInitialReportIfNeeded()
         }

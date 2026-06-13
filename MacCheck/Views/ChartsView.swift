@@ -28,9 +28,7 @@ struct ChartsView: View {
             .navigationTitle("Charts")
             .toolbar { toolbarContent }
         }
-        .sheet(isPresented: $showPaywall) {
-            ProPaywallView()
-        }
+        .proPaywallSheet(isPresented: $showPaywall)
         .onAppear {
             viewModel.refreshIfNeeded()
         }

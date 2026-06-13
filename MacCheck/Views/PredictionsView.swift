@@ -18,9 +18,7 @@ struct PredictionsView: View {
             .navigationTitle("Predictions")
             .toolbar { toolbarContent }
         }
-        .sheet(isPresented: $showPaywall) {
-            ProPaywallView()
-        }
+        .proPaywallSheet(isPresented: $showPaywall)
         .onAppear {
             if entitlementManager.hasAccess(to: .predictions) {
                 viewModel.refreshIfNeeded()

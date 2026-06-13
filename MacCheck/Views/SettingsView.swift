@@ -38,9 +38,7 @@ struct SettingsView: View {
                 viewModel.refreshDataStats()
             }
         }
-        .sheet(isPresented: $showPaywall) {
-            ProPaywallView()
-        }
+        .proPaywallSheet(isPresented: $showPaywall)
         .confirmationDialog(
             "Clear History?",
             isPresented: $viewModel.showClearConfirmation,

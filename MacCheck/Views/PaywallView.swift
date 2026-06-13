@@ -36,6 +36,16 @@ struct PaywallView: View {
         .onChange(of: storeKitManager.restoreNotice) { _, newValue in
             showRestoreNotice = newValue != nil
         }
+        .onAppear {
+            storeKitManager.printPaywallDiagnostics(context: "Paywall appear (before reload)")
+            Task {
+                await storeKitManager.loadProductsIfNeeded(force: true)
+                storeKitManager.printPaywallDiagnostics(context: "Paywall appear (after reload)")
+            }
+        }
+        .onChange(of: storeKitManager.canPurchase) { _, _ in
+            storeKitManager.printPaywallDiagnostics(context: "canPurchase changed")
+        }
     }
 
     // MARK: - Header
@@ -81,7 +91,12 @@ struct PaywallView: View {
 
     private var actionSection: some View {
         VStack(spacing: MacCheckTheme.Spacing.md) {
-            if let error = storeKitManager.purchaseError {
+            if let error = storeKitManager.productLoadError, !storeKitManager.isLoadingProducts {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let error = storeKitManager.purchaseError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
