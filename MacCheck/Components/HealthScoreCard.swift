@@ -16,8 +16,11 @@ struct HealthScoreCard: View {
         VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xl) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xs) {
-                    Text("Health Score")
-                        .font(.largeTitle.weight(.bold))
+                    HStack(alignment: .firstTextBaseline, spacing: MacCheckTheme.Spacing.xs) {
+                        Text("Health Score")
+                            .font(.largeTitle.weight(.bold))
+                        DashboardHelpIcon(help: .healthScore)
+                    }
                     Text("Overall Mac health assessment")
                         .font(.title3)
                         .foregroundStyle(.secondary)
@@ -86,7 +89,13 @@ struct HealthScoreCard: View {
             }
         }
         .frame(width: 188, height: 188)
-        .task(id: score) {
+        .task(id: generatedAt) {
+            var reset = Transaction()
+            reset.disablesAnimations = true
+            withTransaction(reset) {
+                ringProgress = 0
+            }
+
             withAnimation(.easeOut(duration: 0.8)) {
                 ringProgress = CGFloat(score) / 100
             }
@@ -154,4 +163,5 @@ struct HealthScoreCard: View {
     )
     .padding()
     .frame(width: 760)
+    .environmentObject(DashboardTooltipState())
 }

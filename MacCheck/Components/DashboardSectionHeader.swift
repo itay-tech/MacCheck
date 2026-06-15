@@ -1,9 +1,25 @@
 import SwiftUI
 
-struct DashboardSectionHeader: View {
+struct DashboardSectionHeader<Trailing: View>: View {
     let title: String
     var subtitle: String?
     let systemImage: String
+    var help: DashboardHelpText? = nil
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        systemImage: String,
+        help: DashboardHelpText? = nil,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.systemImage = systemImage
+        self.help = help
+        self.trailing = trailing
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: MacCheckTheme.Spacing.sm) {
@@ -13,8 +29,13 @@ struct DashboardSectionHeader: View {
                 .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.title3.weight(.semibold))
+                HStack(alignment: .firstTextBaseline, spacing: MacCheckTheme.Spacing.xs) {
+                    Text(title)
+                        .font(.title3.weight(.semibold))
+                    if let help {
+                        DashboardHelpIcon(help: help)
+                    }
+                }
                 if let subtitle {
                     Text(subtitle)
                         .font(.subheadline)
@@ -23,6 +44,8 @@ struct DashboardSectionHeader: View {
             }
 
             Spacer()
+
+            trailing()
         }
         .padding(.horizontal, MacCheckTheme.Spacing.xs)
     }
@@ -36,9 +59,14 @@ struct DashboardSectionHeader: View {
             systemImage: "square.grid.2x2"
         )
         DashboardSectionHeader(
-            title: "Insights",
-            subtitle: "What your system data means",
-            systemImage: "lightbulb"
+            title: "Startup & Background Items",
+            subtitle: "Enabled items that may affect login and background performance.",
+            systemImage: "power.circle",
+            trailing: {
+                Text("Score: 84/100")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.green)
+            }
         )
     }
     .padding()

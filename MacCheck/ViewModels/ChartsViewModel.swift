@@ -57,9 +57,11 @@ final class ChartsViewModel: ObservableObject {
 
     private let historyService: HistoryService
     private var lastRefreshToken: HistoryRefreshToken?
+    private var cancellables = Set<AnyCancellable>()
 
     init(historyService: HistoryService) {
         self.historyService = historyService
+        observeSnapshotChanges()
     }
 
     /// Loads history once and rebuilds chart data only when snapshots change.
@@ -86,6 +88,15 @@ final class ChartsViewModel: ObservableObject {
             swapUsage: HistoryChartBuilder.swapUsage(from: snapshots),
             thermalHistory: HistoryChartBuilder.thermalHistory(from: snapshots)
         )
+    }
+
+    private func observeSnapshotChanges() {
+        historyService.snapshotsDidChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.invalidateCache()
+            }
+            .store(in: &cancellables)
     }
 }
 

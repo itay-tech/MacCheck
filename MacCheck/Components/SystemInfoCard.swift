@@ -21,15 +21,43 @@ struct SystemInfoCard: View {
 
             Spacer(minLength: MacCheckTheme.Spacing.md)
 
+            ViewThatFits(in: .horizontal) {
+                metricsRow
+                metricsStack
+            }
+        }
+        .macCheckCard(padding: MacCheckTheme.Spacing.md)
+    }
+
+    // MARK: - Metrics Layout
+
+    private var metricsRow: some View {
+        HStack(spacing: MacCheckTheme.Spacing.sm) {
+            serialAndDisplayGroup
+            if let chipName = systemInfo.chipName {
+                infoPill(label: "Chip", value: chipName)
+            }
+            infoPill(label: "macOS", value: systemInfo.macOSVersion)
+        }
+    }
+
+    private var metricsStack: some View {
+        VStack(alignment: .trailing, spacing: MacCheckTheme.Spacing.sm) {
+            serialAndDisplayGroup
             HStack(spacing: MacCheckTheme.Spacing.sm) {
-                infoPill(label: "Serial", value: systemInfo.serialNumberDisplay)
                 if let chipName = systemInfo.chipName {
                     infoPill(label: "Chip", value: chipName)
                 }
                 infoPill(label: "macOS", value: systemInfo.macOSVersion)
             }
         }
-        .macCheckCard(padding: MacCheckTheme.Spacing.md)
+    }
+
+    private var serialAndDisplayGroup: some View {
+        HStack(spacing: MacCheckTheme.Spacing.sm) {
+            infoPill(label: "Serial", value: systemInfo.serialNumberDisplay)
+            infoPill(label: "Display", value: systemInfo.displaySizeLabel)
+        }
     }
 
     // MARK: - Private
@@ -44,6 +72,7 @@ struct SystemInfoCard: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
+        .frame(minHeight: 36, alignment: .leading)
         .padding(.horizontal, MacCheckTheme.Spacing.sm)
         .padding(.vertical, MacCheckTheme.Spacing.xs)
         .background(MacCheckTheme.tertiaryFill)

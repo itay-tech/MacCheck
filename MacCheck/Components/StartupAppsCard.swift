@@ -98,9 +98,10 @@ struct StartupAppsCard: View {
 }
 
 #Preview {
+    let startup = StartupAppsService().fetchStartupApps()
     StartupAppsCard(
-        apps: StartupAppsService().fetchStartupApps().apps,
-        isLimitedData: StartupAppsService().fetchStartupApps().isLimitedData
+        apps: startup.visibleApps,
+        isLimitedData: startup.isLimitedData
     )
     .padding()
     .frame(width: 720)

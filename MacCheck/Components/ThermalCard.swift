@@ -13,6 +13,7 @@ struct ThermalCard: View {
             primaryValue: primaryValue,
             primarySuffix: primarySuffix,
             caption: thermal.explanation,
+            help: .thermal,
             progress: progressValue,
             footerMetrics: footerMetrics
         )

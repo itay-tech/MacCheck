@@ -185,7 +185,8 @@ struct HistoryLineChart: View, Equatable {
         proxy: ChartProxy,
         geometry: GeometryProxy
     ) -> Date? {
-        let plotFrame = geometry[proxy.plotAreaFrame]
+        guard let plotFrameAnchor = proxy.plotFrame else { return nil }
+        let plotFrame = geometry[plotFrameAnchor]
         let xPosition = location.x - plotFrame.origin.x
         guard xPosition >= 0, xPosition <= plotFrame.width else { return nil }
         return proxy.value(atX: xPosition, as: Date.self)

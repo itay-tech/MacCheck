@@ -5,9 +5,9 @@ import Foundation
 final class DashboardViewModel: ObservableObject {
 
     @Published private(set) var report: HealthReport?
-    @Published private(set) var recommendations: [Recommendation] = []
     @Published private(set) var isLoading = false
     @Published private(set) var historyError: String?
+    @Published private(set) var lastRefreshCompletedAt: Date?
 
     private let batteryService: BatteryService
     private let storageService: StorageService
@@ -51,8 +51,16 @@ final class DashboardViewModel: ObservableObject {
     }
 
     func loadReport() {
+        guard !isLoading else {
+            print("[Dashboard] Refresh skipped — load already in progress")
+            return
+        }
+
         isLoading = true
-        recommendations = []
+        let refreshStartedAt = Date()
+        print("[Dashboard] Refresh started at \(refreshStartedAt.formatted(date: .abbreviated, time: .standard))")
+
+        defer { isLoading = false }
 
         let battery = batteryService.fetchBatteryInfo()
         let storage = storageService.fetchStorageInfo()
@@ -69,8 +77,10 @@ final class DashboardViewModel: ObservableObject {
             thermal: thermal
         )
 
-        let reportDraft = HealthReport(
-            generatedAt: Date(),
+        let generatedAt = Date()
+
+        let metricsReport = HealthReport(
+            generatedAt: generatedAt,
             scoreBreakdown: scoreBreakdown,
             systemInfo: systemInfo,
             battery: battery,
@@ -83,10 +93,9 @@ final class DashboardViewModel: ObservableObject {
             recommendations: []
         )
 
-        let insights = insightsService.generateInsights(from: reportDraft)
-
+        let insights = insightsService.generateInsights(from: metricsReport)
         let reportWithInsights = HealthReport(
-            generatedAt: reportDraft.generatedAt,
+            generatedAt: generatedAt,
             scoreBreakdown: scoreBreakdown,
             systemInfo: systemInfo,
             battery: battery,
@@ -101,10 +110,8 @@ final class DashboardViewModel: ObservableObject {
 
         let recommendations = recommendationsService.generateRecommendations(from: reportWithInsights)
 
-        self.recommendations = recommendations
-
         let finalReport = HealthReport(
-            generatedAt: reportDraft.generatedAt,
+            generatedAt: generatedAt,
             scoreBreakdown: scoreBreakdown,
             systemInfo: systemInfo,
             battery: battery,
@@ -118,6 +125,8 @@ final class DashboardViewModel: ObservableObject {
         )
 
         report = finalReport
+        lastRefreshCompletedAt = Date()
+        printRefreshDiagnostics(report: finalReport, refreshCompletedAt: lastRefreshCompletedAt!)
 
         do {
             try historyService.recordSnapshot(from: finalReport)
@@ -125,7 +134,13 @@ final class DashboardViewModel: ObservableObject {
         } catch {
             historyError = historyService.lastSaveErrorMessage
         }
+    }
 
-        isLoading = false
+    private func printRefreshDiagnostics(report: HealthReport, refreshCompletedAt: Date) {
+        print("[Dashboard] report generatedAt: \(report.generatedAt.formatted(date: .abbreviated, time: .standard))")
+        print("[Dashboard] health score: \(report.healthScore)")
+        print("[Dashboard] insights count: \(report.insights.count)")
+        print("[Dashboard] first insight title: \(report.insights.first?.title ?? "none")")
+        print("[Dashboard] refresh timestamp: \(refreshCompletedAt.formatted(date: .abbreviated, time: .standard))")
     }
 }

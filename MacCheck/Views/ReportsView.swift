@@ -59,9 +59,8 @@ struct ReportsView: View {
     // MARK: - Coming Soon
 
     private var comingSoonContent: some View {
-        ScrollView {
+        ReportsScrollContainer {
             ReportsComingSoonPage()
-                .padding(MacCheckTheme.Spacing.xl)
         }
     }
 
@@ -77,16 +76,18 @@ struct ReportsView: View {
     }
 
     private var lockedContent: some View {
-        ScrollView {
+        ReportsScrollContainer(
+            verticalCentering: true,
+            maxWidth: MacCheckTheme.Layout.focusedMaxWidth
+        ) {
             ReportsLockedPage {
                 showPaywall = true
             }
-            .padding(.vertical, MacCheckTheme.Spacing.xl)
         }
     }
 
     private var proContent: some View {
-        ScrollView {
+        ReportsScrollContainer {
             VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xxl) {
                 DashboardSectionHeader(
                     title: "Reports",
@@ -95,44 +96,79 @@ struct ReportsView: View {
                 )
 
                 if let statusMessage = viewModel.statusMessage {
-                    HStack(spacing: MacCheckTheme.Spacing.sm) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text(statusMessage)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(MacCheckTheme.Spacing.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(MacCheckTheme.tertiaryFill)
-                    .clipShape(RoundedRectangle(cornerRadius: MacCheckTheme.Radius.sm, style: .continuous))
+                    exportStatusBanner(statusMessage)
                 }
 
                 ReportsOverviewHero(overview: viewModel.pageData.overview)
 
-                HStack(alignment: .top, spacing: MacCheckTheme.Spacing.xl) {
-                    reportColumn(
-                        model: viewModel.pageData.healthReport,
-                        type: .health,
-                        buttonTitle: "Generate Health Report"
-                    )
-
-                    reportColumn(
-                        model: viewModel.pageData.inspectionReport,
-                        type: .usedMacInspection,
-                        buttonTitle: "Generate Inspection Report"
-                    )
-                }
+                reportCardsGrid
             }
-            .padding(MacCheckTheme.Spacing.xl)
-            .frame(maxWidth: 1080)
+        }
+    }
+
+    // MARK: - Report Grid
+
+    private var reportCardsGrid: some View {
+        ViewThatFits(in: .horizontal) {
+            reportCardsRow
+            reportCardsStack
+        }
+    }
+
+    private var reportCardsRow: some View {
+        HStack(alignment: .top, spacing: MacCheckTheme.Spacing.xl) {
+            reportColumn(
+                model: viewModel.pageData.healthReport,
+                type: .health,
+                buttonTitle: "Generate Health Report"
+            )
+            .frame(minWidth: MacCheckTheme.Layout.reportCardMinWidth)
+            .frame(maxWidth: .infinity)
+
+            reportColumn(
+                model: viewModel.pageData.inspectionReport,
+                type: .usedMacInspection,
+                buttonTitle: "Generate Inspection Report"
+            )
+            .frame(minWidth: MacCheckTheme.Layout.reportCardMinWidth)
             .frame(maxWidth: .infinity)
         }
+    }
+
+    private var reportCardsStack: some View {
+        VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xl) {
+            reportColumn(
+                model: viewModel.pageData.healthReport,
+                type: .health,
+                buttonTitle: "Generate Health Report"
+            )
+
+            reportColumn(
+                model: viewModel.pageData.inspectionReport,
+                type: .usedMacInspection,
+                buttonTitle: "Generate Inspection Report"
+            )
+        }
+    }
+
+    private func exportStatusBanner(_ statusMessage: String) -> some View {
+        HStack(spacing: MacCheckTheme.Spacing.sm) {
+            ProgressView()
+                .controlSize(.small)
+            Text(statusMessage)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(MacCheckTheme.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(MacCheckTheme.tertiaryFill)
+        .clipShape(RoundedRectangle(cornerRadius: MacCheckTheme.Radius.sm, style: .continuous))
     }
 
     private func reportColumn(model: ReportCardModel, type: ReportType, buttonTitle: String) -> some View {
         VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.md) {
             ReportCard(model: model)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
 
             generateButton(title: buttonTitle, type: type)
         }
@@ -171,6 +207,49 @@ struct ReportsView: View {
         showSuccessAlert = false
         successFileURL = nil
         viewModel.clearExportSuccess()
+    }
+}
+
+// MARK: - Scroll Container
+
+private struct ReportsScrollContainer<Content: View>: View {
+    var verticalCentering: Bool = false
+    var maxWidth: CGFloat = MacCheckTheme.Layout.contentMaxWidth
+    private let content: Content
+
+    init(
+        verticalCentering: Bool = false,
+        maxWidth: CGFloat = MacCheckTheme.Layout.contentMaxWidth,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.verticalCentering = verticalCentering
+        self.maxWidth = maxWidth
+        self.content = content()
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                Group {
+                    if verticalCentering {
+                        VStack(spacing: 0) {
+                            Spacer(minLength: MacCheckTheme.Spacing.xxl)
+                            content
+                                .frame(maxWidth: maxWidth)
+                                .frame(maxWidth: .infinity)
+                            Spacer(minLength: MacCheckTheme.Spacing.xxl)
+                        }
+                    } else {
+                        content
+                            .macCheckCenteredContent(maxWidth: maxWidth)
+                    }
+                }
+                .padding(MacCheckTheme.Spacing.xl)
+                .frame(minHeight: verticalCentering ? geometry.size.height : nil)
+                .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 

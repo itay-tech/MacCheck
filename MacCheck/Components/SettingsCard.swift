@@ -51,3 +51,34 @@ struct SettingsBulletRow: View {
         }
     }
 }
+
+struct SettingsActionRow: View {
+    let title: String
+    let systemImage: String
+    var showsExternalIcon = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: MacCheckTheme.Spacing.sm) {
+                Image(systemName: systemImage)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width: 20)
+
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: MacCheckTheme.Spacing.md)
+
+                Image(systemName: showsExternalIcon ? "arrow.up.right" : "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}

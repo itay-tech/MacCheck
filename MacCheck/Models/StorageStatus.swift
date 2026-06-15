@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum StorageStatus: String, Equatable, Codable {
     case healthy
@@ -18,6 +19,23 @@ enum StorageStatus: String, Equatable, Codable {
         case .healthy: 92
         case .warning: 62
         case .critical: 28
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .healthy: "Healthy"
+        case .warning: "Warning"
+        case .critical: "Critical"
+        }
+    }
+
+    /// Semantic tint for status badges and progress bars — aligned with Memory KPI cards.
+    var semanticColor: Color {
+        switch self {
+        case .healthy: .green
+        case .warning: .orange
+        case .critical: .red
         }
     }
 }

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Darwin
 import Foundation
 import IOKit
@@ -26,8 +27,37 @@ final class SystemInfoService {
             modelName: modelName,
             modelIdentifier: hardwareProfile["Model Identifier"] ?? modelIdentifier,
             macOSVersion: macOSVersion,
-            chipName: chipName?.isEmpty == false ? chipName : nil
+            chipName: chipName?.isEmpty == false ? chipName : nil,
+            screenSizeInches: readBuiltInDisplaySizeInches()
         )
+    }
+
+    // MARK: - Display
+
+    private func readBuiltInDisplaySizeInches() -> Double? {
+        var displayCount: UInt32 = 0
+        guard CGGetActiveDisplayList(0, nil, &displayCount) == .success, displayCount > 0 else {
+            return nil
+        }
+
+        var displays = [CGDirectDisplayID](repeating: 0, count: Int(displayCount))
+        guard CGGetActiveDisplayList(displayCount, &displays, &displayCount) == .success else {
+            return nil
+        }
+
+        for display in displays where CGDisplayIsBuiltin(display) != 0 {
+            let sizeMillimeters = CGDisplayScreenSize(display)
+            guard sizeMillimeters.width > 0, sizeMillimeters.height > 0 else {
+                continue
+            }
+
+            let diagonalMillimeters = hypot(sizeMillimeters.width, sizeMillimeters.height)
+            let diagonalInches = diagonalMillimeters / 25.4
+            guard diagonalInches > 0 else { continue }
+            return diagonalInches
+        }
+
+        return nil
     }
 
     // MARK: - IOKit

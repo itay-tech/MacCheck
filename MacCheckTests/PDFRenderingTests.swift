@@ -68,7 +68,8 @@ struct PDFRenderingTests {
                 modelName: "MacBook Pro",
                 modelIdentifier: "Mac14,9",
                 macOSVersion: "15.6",
-                chipName: "Apple M2 Pro"
+                chipName: "Apple M2 Pro",
+                screenSizeInches: 14.2
             ),
             battery: BatteryInfo(
                 hasBattery: true,

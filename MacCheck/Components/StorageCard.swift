@@ -2,16 +2,19 @@ import SwiftUI
 
 struct StorageCard: View {
     let storage: StorageInfo
+    var storageScore: Int
 
     var body: some View {
         MetricKPICard(
             icon: "internaldrive.fill",
             title: "Storage",
-            tint: storageTint,
+            tint: storage.analysis.status.semanticColor,
             badge: storage.analysis.status.displayName,
             primaryValue: "\(Int(storage.usedPercentage * 100))",
             primarySuffix: "%",
             caption: "\(ByteFormatter.string(from: storage.usedBytes)) of \(ByteFormatter.string(from: storage.totalBytes))",
+            help: .storage,
+            subsystemScore: storageScore,
             progress: storage.usedPercentage,
             footerMetrics: [
                 (label: "Free", value: ByteFormatter.string(from: storage.availableBytes)),
@@ -21,28 +24,10 @@ struct StorageCard: View {
             ]
         )
     }
-
-    private var storageTint: Color {
-        switch storage.usedPercentage {
-        case ..<0.7: .green
-        case 0.7..<0.85: .orange
-        default: .red
-        }
-    }
-}
-
-private extension StorageStatus {
-    var displayName: String {
-        switch self {
-        case .healthy: "Healthy"
-        case .warning: "Warning"
-        case .critical: "Critical"
-        }
-    }
 }
 
 #Preview {
-    StorageCard(storage: StorageService().fetchStorageInfo())
+    StorageCard(storage: StorageService().fetchStorageInfo(), storageScore: 88)
         .padding()
         .frame(width: 320)
 }

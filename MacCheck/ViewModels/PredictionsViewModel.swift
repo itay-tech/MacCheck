@@ -13,9 +13,11 @@ final class PredictionsViewModel: ObservableObject {
 
     private let historyService: HistoryService
     private var lastRefreshToken: PredictionsRefreshToken?
+    private var cancellables = Set<AnyCancellable>()
 
     init(historyService: HistoryService) {
         self.historyService = historyService
+        observeSnapshotChanges()
     }
 
     func refreshIfNeeded() {
@@ -30,6 +32,15 @@ final class PredictionsViewModel: ObservableObject {
     func invalidateCache() {
         lastRefreshToken = nil
         refreshIfNeeded()
+    }
+
+    private func observeSnapshotChanges() {
+        historyService.snapshotsDidChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.invalidateCache()
+            }
+            .store(in: &cancellables)
     }
 }
 

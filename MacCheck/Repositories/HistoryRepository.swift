@@ -42,10 +42,14 @@ enum HistoryRepositoryError: Error, LocalizedError {
 /// Persists health snapshots as JSON in Application Support.
 final class HistoryRepository {
 
-    /// Change this value to switch between real and mock history during development.
-    static var dataSource: HistoryDataSource = .real
+#if DEBUG
+    /// DEBUG only. Release builds always use `.real`.
+    static var dataSource: HistoryDataSource = .mock90Days
+#else
+    static let dataSource: HistoryDataSource = .real
+#endif
 
-    private let fileURL: URL
+    let snapshotsFileURL: URL
     private let fileManager: FileManager
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -65,20 +69,20 @@ final class HistoryRepository {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         let directory = (appSupport ?? fileManager.temporaryDirectory)
             .appendingPathComponent("MacCheck", isDirectory: true)
-        self.fileURL = directory.appendingPathComponent("health_snapshots.json", isDirectory: false)
+        self.snapshotsFileURL = directory.appendingPathComponent("health_snapshots.json", isDirectory: false)
     }
 
     func loadSnapshots() throws -> [HealthSnapshot] {
-        switch Self.dataSource {
+        switch Self.resolvedDataSource {
         case .real:
             return try loadProductionSnapshots()
         case .mock2Days, .mock7Days, .mock30Days, .mock90Days:
-            return try loadMockSnapshots(for: Self.dataSource)
+            return try loadMockSnapshots(for: Self.resolvedDataSource)
         }
     }
 
     func saveSnapshots(_ snapshots: [HealthSnapshot]) throws {
-        guard Self.dataSource == .real else { return }
+        guard Self.resolvedDataSource == .real else { return }
 
         try ensureDirectoryExists()
 
@@ -90,7 +94,7 @@ final class HistoryRepository {
         }
 
         do {
-            try data.write(to: fileURL, options: .atomic)
+            try data.write(to: snapshotsFileURL, options: .atomic)
         } catch {
             throw error
         }
@@ -98,12 +102,20 @@ final class HistoryRepository {
 
     // MARK: - Private
 
+    private static var resolvedDataSource: HistoryDataSource {
+#if DEBUG
+        dataSource
+#else
+        .real
+#endif
+    }
+
     private func loadProductionSnapshots() throws -> [HealthSnapshot] {
-        guard fileManager.fileExists(atPath: fileURL.path) else {
+        guard fileManager.fileExists(atPath: snapshotsFileURL.path) else {
             return []
         }
 
-        let data = try Data(contentsOf: fileURL)
+        let data = try Data(contentsOf: snapshotsFileURL)
         guard !data.isEmpty else { return [] }
 
         return try decodeSnapshotData(data)
@@ -196,7 +208,7 @@ final class HistoryRepository {
     }
 
     private func ensureDirectoryExists() throws {
-        let directory = fileURL.deletingLastPathComponent()
+        let directory = snapshotsFileURL.deletingLastPathComponent()
         if fileManager.fileExists(atPath: directory.path) {
             return
         }

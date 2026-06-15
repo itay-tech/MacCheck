@@ -9,6 +9,8 @@ struct MetricKPICard: View {
     let primaryValue: String
     let primarySuffix: String?
     let caption: String
+    var help: DashboardHelpText? = nil
+    var subsystemScore: Int? = nil
     let progress: Double
     let footerMetrics: [(label: String, value: String)]
 
@@ -36,6 +38,12 @@ struct MetricKPICard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if let subsystemScore {
+                    Text("Score: \(subsystemScore)/100")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(HealthScoreColor.color(for: subsystemScore))
+                }
             }
 
             ProgressView(value: min(max(progress, 0), 1))
@@ -61,6 +69,10 @@ struct MetricKPICard: View {
 
             Text(title)
                 .font(.headline)
+
+            if let help {
+                DashboardHelpIcon(help: help)
+            }
 
             Spacer(minLength: 0)
 

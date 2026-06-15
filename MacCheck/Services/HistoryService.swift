@@ -1,13 +1,18 @@
+import Combine
 import Foundation
 
 /// Manages local health snapshot history for trends and comparisons.
 final class HistoryService {
 
+    /// One daily snapshot per calendar day, retained for up to five years.
+    static let maxSnapshots = 1825
+
+    let snapshotsDidChange = PassthroughSubject<Void, Never>()
+
     private(set) var lastSaveErrorMessage: String?
 
     private let repository: HistoryRepository
     private let calendar: Calendar
-    private let maxSnapshots = 365
     private var snapshots: [HealthSnapshot]
 
     init(
@@ -17,6 +22,10 @@ final class HistoryService {
         self.repository = repository
         self.calendar = calendar
         self.snapshots = Self.loadAndNormalize(from: repository, calendar: calendar)
+    }
+
+    var snapshotsFilePath: String {
+        repository.snapshotsFileURL.path
     }
 
     // MARK: - Recording
@@ -30,18 +39,30 @@ final class HistoryService {
         )
 
         let snapshotsBeforeSave = snapshots
+        let existingSnapshotForDay = snapshots.first {
+            calendar.isDate($0.timestamp, inSameDayAs: snapshot.timestamp)
+        }
+        let isReplacing = existingSnapshotForDay != nil
+
+        print("[History] Snapshot save requested")
+        print("[History] Snapshot date: \(snapshot.timestamp.formatted(date: .abbreviated, time: .standard))")
+        print("[History] Existing snapshot for day found: \(isReplacing)")
+        print("[History] Replacing snapshot: \(isReplacing)")
 
         snapshots.removeAll { calendar.isDate($0.timestamp, inSameDayAs: snapshot.timestamp) }
         snapshots.append(snapshot)
         snapshots.sort { $0.timestamp > $1.timestamp }
 
-        if snapshots.count > maxSnapshots {
-            snapshots = Array(snapshots.prefix(maxSnapshots))
+        if snapshots.count > Self.maxSnapshots {
+            snapshots = Array(snapshots.prefix(Self.maxSnapshots))
         }
 
         do {
             try repository.saveSnapshots(snapshots)
             lastSaveErrorMessage = nil
+            print("[History] Total stored snapshots: \(snapshots.count)")
+            print("[History] File path: \(snapshotsFilePath)")
+            snapshotsDidChange.send()
         } catch {
             snapshots = snapshotsBeforeSave
             lastSaveErrorMessage = Self.userMessage(for: error)
@@ -98,6 +119,7 @@ final class HistoryService {
         do {
             try repository.saveSnapshots([])
             lastSaveErrorMessage = nil
+            snapshotsDidChange.send()
         } catch {
             snapshots = snapshotsBeforeClear
             lastSaveErrorMessage = Self.userMessage(for: error)

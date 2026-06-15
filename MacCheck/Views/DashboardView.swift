@@ -4,6 +4,7 @@ struct DashboardView: View {
     @ObservedObject var viewModel: DashboardViewModel
     var onViewHistory: (() -> Void)?
     @EnvironmentObject private var entitlementManager: EntitlementManager
+    @StateObject private var tooltipState = DashboardTooltipState()
     @State private var showPaywall = false
 
     var body: some View {
@@ -36,8 +37,9 @@ struct DashboardView: View {
 
     @ViewBuilder
     private func dashboardContent(_ report: HealthReport) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xxl) {
+        ZStack(alignment: .topLeading) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xxl) {
                 HealthScoreCard(
                     breakdown: report.scoreBreakdown,
                     generatedAt: report.generatedAt
@@ -59,13 +61,17 @@ struct DashboardView: View {
 
                 VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.lg) {
                     DashboardSectionHeader(
-                        title: "Startup Applications",
-                        subtitle: "Items configured to launch at login",
-                        systemImage: "power.circle"
+                        title: "Startup & Background Items",
+                        subtitle: "Enabled items that may affect login and background performance.",
+                        systemImage: "power.circle",
+                        help: .startupItems,
+                        trailing: {
+                            startupScoreLabel(report.startupScore)
+                        }
                     )
 
                     StartupAppsCard(
-                        apps: report.startupApps,
+                        apps: report.startupApps.visibleForScoring,
                         isLimitedData: report.isStartupDataLimited
                     )
                 }
@@ -74,7 +80,8 @@ struct DashboardView: View {
                     DashboardSectionHeader(
                         title: "Insights",
                         subtitle: "What your system data means",
-                        systemImage: "lightbulb"
+                        systemImage: "lightbulb",
+                        help: .insights
                     )
 
                     InsightsCard(insights: report.insights)
@@ -84,26 +91,29 @@ struct DashboardView: View {
                     DashboardSectionHeader(
                         title: "Recommendations",
                         subtitle: "Suggested next steps, prioritized by impact",
-                        systemImage: "checklist"
+                        systemImage: "checklist",
+                        help: .recommendations
                     )
 
-                    RecommendationsCard(recommendations: viewModel.recommendations)
+                    RecommendationsCard(recommendations: report.recommendations)
                 }
 
                 VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.lg) {
                     FeatureGate(feature: .predictions, showPaywall: $showPaywall) {
                         predictionsSection(report)
                     }
-
-                    FeatureGate(feature: .history, showPaywall: $showPaywall) {
-                        historySection(report)
-                    }
                 }
             }
-            .padding(MacCheckTheme.Spacing.xl)
-            .frame(maxWidth: 980)
-            .frame(maxWidth: .infinity)
+                .id(report.generatedAt)
+                .padding(MacCheckTheme.Spacing.xl)
+                .frame(maxWidth: 980)
+                .frame(maxWidth: .infinity)
+            }
+
+            DashboardTooltipHost()
         }
+        .coordinateSpace(name: DashboardCoordinateSpace.root)
+        .environmentObject(tooltipState)
     }
 
     @ViewBuilder
@@ -125,19 +135,34 @@ struct DashboardView: View {
     private func kpiGrid(_ report: HealthReport) -> some View {
         VStack(spacing: MacCheckTheme.Spacing.lg) {
             HStack(alignment: .top, spacing: MacCheckTheme.Spacing.lg) {
-                BatteryCard(battery: report.battery)
-                    .frame(maxWidth: .infinity)
-                StorageCard(storage: report.storage)
-                    .frame(maxWidth: .infinity)
+                BatteryCard(
+                    battery: report.battery,
+                    batteryScore: report.batteryScore
+                )
+                .frame(maxWidth: .infinity)
+                StorageCard(
+                    storage: report.storage,
+                    storageScore: report.storageScore
+                )
+                .frame(maxWidth: .infinity)
             }
 
             HStack(alignment: .top, spacing: MacCheckTheme.Spacing.lg) {
-                MemoryCard(memory: report.memory)
-                    .frame(maxWidth: .infinity)
+                MemoryCard(
+                    memory: report.memory,
+                    memoryScore: report.memoryScore
+                )
+                .frame(maxWidth: .infinity)
                 ThermalCard(thermal: report.thermal, thermalScore: report.thermalScore)
                     .frame(maxWidth: .infinity)
             }
         }
+    }
+
+    private func startupScoreLabel(_ score: Int) -> some View {
+        Text("Score: \(score)/100")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(HealthScoreColor.color(for: score))
     }
 
     private func predictionsSection(_ report: HealthReport) -> some View {
@@ -166,35 +191,6 @@ struct DashboardView: View {
                     value: report.storage.analysis.topGrowingCategory.displayName,
                     icon: "chart.line.uptrend.xyaxis"
                 )
-            }
-        }
-        .macCheckCard()
-    }
-
-    private func historySection(_ report: HealthReport) -> some View {
-        VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.md) {
-            HStack {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .foregroundStyle(.blue)
-                Text("Storage History")
-                    .font(.headline)
-                ProBadge(compact: true)
-            }
-
-            VStack(spacing: MacCheckTheme.Spacing.sm) {
-                ForEach(report.storage.snapshots.sorted(by: { $0.date > $1.date })) { snapshot in
-                    HStack {
-                        Text(snapshot.date.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(ByteFormatter.string(from: snapshot.usedBytes))
-                            .font(.caption.weight(.medium))
-                        Text("(\(Int(snapshot.usedPercentage * 100))%)")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
             }
         }
         .macCheckCard()

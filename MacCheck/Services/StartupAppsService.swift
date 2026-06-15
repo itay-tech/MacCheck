@@ -41,6 +41,9 @@ final class StartupAppsService {
         }
 
         let isLimitedData = hadUnavailableSource
+        let visibleCount = apps.visibleForScoring.count
+        print("[StartupApps] Visible entries: \(visibleCount)")
+        print("[StartupApps] Scored entries: \(visibleCount)")
 
         return StartupAppsFetchResult(
             apps: apps,

@@ -53,12 +53,7 @@ final class AppStore {
         self.historyViewModel = HistoryViewModel(historyService: historyService)
         self.chartsViewModel = ChartsViewModel(historyService: historyService)
         self.predictionsViewModel = PredictionsViewModel(historyService: historyService)
-        self.settingsViewModel = SettingsViewModel(
-            historyService: historyService,
-            historyViewModel: historyViewModel,
-            chartsViewModel: chartsViewModel,
-            predictionsViewModel: predictionsViewModel
-        )
+        self.settingsViewModel = SettingsViewModel(historyService: historyService)
         self.dashboardViewModel = DashboardViewModel(
             batteryService: batteryService,
             storageService: storageService,

@@ -22,6 +22,15 @@ enum MacCheckTheme {
         static let height: CGFloat = 272
     }
 
+    enum Layout {
+        /// Shared max width for primary page content (Dashboard, Reports, Predictions).
+        static let contentMaxWidth: CGFloat = 980
+        /// Narrower width for focused locked / empty states.
+        static let focusedMaxWidth: CGFloat = 640
+        /// Minimum width per report card before the grid stacks to one column.
+        static let reportCardMinWidth: CGFloat = 360
+    }
+
     static let cardBackground = Color(nsColor: .controlBackgroundColor)
     static let secondaryBackground = Color(nsColor: .windowBackgroundColor)
     static let tertiaryFill = Color.primary.opacity(0.05)
@@ -96,5 +105,13 @@ extension View {
 
     func macCheckPanel() -> some View {
         modifier(PanelCardStyle())
+    }
+
+    /// Constrains content to the standard MacCheck max width and centers it horizontally.
+    func macCheckCenteredContent(
+        maxWidth: CGFloat = MacCheckTheme.Layout.contentMaxWidth
+    ) -> some View {
+        frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
     }
 }

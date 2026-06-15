@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BatteryCard: View {
     let battery: BatteryInfo
+    var batteryScore: Int?
 
     var body: some View {
         if battery.hasBattery {
@@ -22,6 +23,8 @@ struct BatteryCard: View {
             primaryValue: chargePrimaryValue,
             primarySuffix: chargePrimarySuffix,
             caption: batteryCaption,
+            help: .battery,
+            subsystemScore: batteryScore,
             progress: chargeProgress,
             footerMetrics: [
                 (label: "Health", value: battery.healthDisplayValue),
@@ -41,6 +44,7 @@ struct BatteryCard: View {
             primaryValue: "—",
             primarySuffix: nil,
             caption: "No internal battery",
+            help: .battery,
             progress: 0,
             footerMetrics: [
                 (label: "Health", value: "N/A"),

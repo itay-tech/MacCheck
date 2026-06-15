@@ -43,8 +43,6 @@ struct ReportsLockedPage: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
         }
-        .padding(MacCheckTheme.Spacing.xl)
-        .frame(maxWidth: 640)
         .frame(maxWidth: .infinity)
     }
 
@@ -73,6 +71,7 @@ struct ReportsLockedPage: View {
                     .multilineTextAlignment(.center)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func benefitRow(icon: String, title: String, detail: String) -> some View {

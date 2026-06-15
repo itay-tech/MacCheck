@@ -21,7 +21,6 @@ struct ReportsComingSoonPage: View {
 
             developmentNote
         }
-        .frame(maxWidth: 720, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -151,6 +150,7 @@ struct ReportsComingSoonPage: View {
     ScrollView {
         ReportsComingSoonPage()
             .padding(MacCheckTheme.Spacing.xl)
+            .macCheckCenteredContent()
     }
     .background(MacCheckTheme.secondaryBackground)
     .frame(width: 800, height: 700)

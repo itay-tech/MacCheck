@@ -268,7 +268,7 @@ enum PredictionEngine {
         confidence: PredictionConfidence,
         calendar: Calendar
     ) -> PredictionCardModel {
-        let (recentAvg, olderAvg, percentChange) = swapTrend(from: snapshots, calendar: calendar)
+        let (recentAvg, percentChange) = swapTrend(from: snapshots, calendar: calendar)
         let risk = memoryRiskLevel(percentChange: percentChange, recentAvgGB: recentAvg / bytesPerGigabyte)
 
         let summary: String
@@ -332,7 +332,7 @@ enum PredictionEngine {
             )
         }
 
-        let (recentSeverity, olderSeverity, increased) = thermalTrend(from: known, calendar: calendar)
+        let (recentSeverity, increased) = thermalTrend(from: known, calendar: calendar)
         let risk = thermalRiskLevel(
             recentSeverity: recentSeverity,
             increased: increased,
@@ -428,9 +428,9 @@ enum PredictionEngine {
     private static func swapTrend(
         from snapshots: [HealthSnapshot],
         calendar: Calendar
-    ) -> (recentAvg: Double, olderAvg: Double, percentChange: Double) {
+    ) -> (recentAvg: Double, percentChange: Double) {
         guard let latestDate = snapshots.last?.timestamp else {
-            return (0, 0, 0)
+            return (0, 0)
         }
 
         let cutoff = calendar.date(byAdding: .day, value: -30, to: latestDate) ?? latestDate
@@ -455,15 +455,15 @@ enum PredictionEngine {
             percentChange = recentAvg > 0 ? 100 : 0
         }
 
-        return (recentAvg, olderAvg, percentChange)
+        return (recentAvg, percentChange)
     }
 
     private static func thermalTrend(
         from snapshots: [HealthSnapshot],
         calendar: Calendar
-    ) -> (recentSeverity: Double, olderSeverity: Double, increased: Bool) {
+    ) -> (recentSeverity: Double, increased: Bool) {
         guard let latestDate = snapshots.last?.timestamp else {
-            return (0, 0, false)
+            return (0, false)
         }
 
         let cutoff = calendar.date(byAdding: .day, value: -30, to: latestDate) ?? latestDate
@@ -483,7 +483,7 @@ enum PredictionEngine {
         let olderSeverity = average(olderValues)
         let increased = recentSeverity > olderSeverity + 0.25
 
-        return (recentSeverity, olderSeverity, increased)
+        return (recentSeverity, increased)
     }
 
     private static func thermalSeverity(_ status: ThermalStatus) -> Int {

@@ -85,6 +85,25 @@ struct SettingsView: View {
             } else {
                 freePlanCard
             }
+
+            SettingsCard {
+                VStack(spacing: MacCheckTheme.Spacing.md) {
+                    SettingsActionRow(
+                        title: "Check for Updates",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    ) {
+                        openURL(AppLinks.checkForUpdatesURL)
+                    }
+
+                    SettingsActionRow(
+                        title: "Rate MacCheck",
+                        systemImage: "star",
+                        showsExternalIcon: true
+                    ) {
+                        openURL(AppLinks.rateAppURL)
+                    }
+                }
+            }
         }
     }
 
@@ -232,6 +251,17 @@ struct SettingsView: View {
                             value: formattedDate(viewModel.newestSnapshotDate)
                         )
                     }
+
+                    VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xs) {
+                        Text("Storage Path")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Text(viewModel.snapshotsFilePath)
+                            .font(.caption)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     Divider()
 

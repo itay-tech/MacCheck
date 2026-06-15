@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MemoryCard: View {
     let memory: MemoryInfo
+    var memoryScore: Int
 
     var body: some View {
         MetricKPICard(
@@ -12,6 +13,8 @@ struct MemoryCard: View {
             primaryValue: "\(Int((memory.usedPercentage * 100).rounded()))",
             primarySuffix: "%",
             caption: "\(ByteFormatter.string(from: memory.usedMemoryBytes)) of \(ByteFormatter.string(from: memory.totalMemoryBytes))",
+            help: .memory,
+            subsystemScore: memoryScore,
             progress: memory.usedPercentage,
             footerMetrics: [
                 (label: "Swap", value: ByteFormatter.swapString(from: memory.swapUsedBytes)),
@@ -32,7 +35,7 @@ struct MemoryCard: View {
 }
 
 #Preview {
-    MemoryCard(memory: MemoryService().fetchMemoryInfo())
+    MemoryCard(memory: MemoryService().fetchMemoryInfo(), memoryScore: 76)
         .padding()
         .frame(width: 320)
 }

@@ -65,8 +65,6 @@ struct HistoryView: View {
                     hasComparableHistory: viewModel.hasComparableHistory
                 )
 
-                comparisonSection
-
                 HistoryStatisticsSection(
                     statistics: viewModel.statistics,
                     hasFullAccess: hasFullHistoryAccess,
@@ -81,45 +79,6 @@ struct HistoryView: View {
             .frame(maxWidth: 980)
             .frame(maxWidth: .infinity)
         }
-    }
-
-    @ViewBuilder
-    private var comparisonSection: some View {
-        VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.lg) {
-            DashboardSectionHeader(
-                title: "Current vs Previous",
-                subtitle: "Metric-by-metric changes since your last saved snapshot",
-                systemImage: "arrow.left.arrow.right"
-            )
-
-            if viewModel.hasComparableHistory {
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: MacCheckTheme.Spacing.lg),
-                        GridItem(.flexible(), spacing: MacCheckTheme.Spacing.lg)
-                    ],
-                    spacing: MacCheckTheme.Spacing.lg
-                ) {
-                    ForEach(viewModel.comparisonItems) { item in
-                        HistoryComparisonCard(item: item)
-                    }
-                }
-            } else {
-                comparisonEmptyState
-            }
-        }
-    }
-
-    private var comparisonEmptyState: some View {
-        VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.sm) {
-            Text("History will appear after your next scan.")
-                .font(.headline)
-            Text("MacCheck keeps one snapshot per day and compares your Mac health over time.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .macCheckHeroCard()
     }
 
     private var snapshotListSection: some View {
