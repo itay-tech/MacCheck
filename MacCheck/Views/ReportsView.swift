@@ -28,7 +28,7 @@ struct ReportsView: View {
             .navigationTitle("Reports")
             .toolbar { toolbarContent }
         }
-        .proPaywallSheet(isPresented: $showPaywall)
+        .proPaywallSheet(isPresented: $showPaywall, source: .reports)
         .modifier(ExportAlertsModifier(
             isEnabled: ReportsFeatureFlags.exportEnabled,
             showErrorAlert: $showErrorAlert,

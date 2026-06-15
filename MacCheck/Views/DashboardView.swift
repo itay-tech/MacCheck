@@ -27,7 +27,7 @@ struct DashboardView: View {
             .navigationTitle("MacCheck")
             .toolbar { toolbarContent }
         }
-        .proPaywallSheet(isPresented: $showPaywall)
+        .proPaywallSheet(isPresented: $showPaywall, source: .unknown)
         .task {
             viewModel.loadInitialReportIfNeeded()
         }
@@ -221,6 +221,7 @@ struct DashboardView: View {
 
         ToolbarItemGroup(placement: .primaryAction) {
             Button {
+                PostHogService.shared.track(.dashboardRefresh)
                 viewModel.loadReport()
             } label: {
                 Image(systemName: "arrow.clockwise")

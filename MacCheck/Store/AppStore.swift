@@ -5,6 +5,7 @@ import SwiftUI
 final class AppStore {
 
     let entitlementManager: EntitlementManager
+    let analyticsConsentManager: AnalyticsConsentManager
     let storeKitManager: StoreKitManager
     let batteryService: BatteryService
     let storageService: StorageService
@@ -25,6 +26,7 @@ final class AppStore {
 
     init() {
         let entitlementManager = EntitlementManager()
+        let analyticsConsentManager = AnalyticsConsentManager()
         let storeKitManager = StoreKitManager(entitlementManager: entitlementManager)
         let batteryService = BatteryService()
         let storageService = StorageService()
@@ -38,6 +40,7 @@ final class AppStore {
         let historyService = HistoryService()
 
         self.entitlementManager = entitlementManager
+        self.analyticsConsentManager = analyticsConsentManager
         self.storeKitManager = storeKitManager
         print("[StoreKit] AppStore wired manager instance=\(ObjectIdentifier(storeKitManager))")
         self.batteryService = batteryService

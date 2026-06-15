@@ -161,6 +161,7 @@ final class StoreKitManager: ObservableObject {
 
         guard let product = lifetimeProduct else {
             purchaseError = Self.productLoadFailureMessage
+            PostHogService.shared.track(.purchaseFailed(errorType: "product_unavailable"))
             printPaywallDiagnostics(context: "purchaseLifetime blocked")
             return
         }
@@ -182,12 +183,15 @@ final class StoreKitManager: ObservableObject {
 
             case .pending:
                 purchaseError = "Purchase is pending approval."
+                PostHogService.shared.track(.purchaseFailed(errorType: "pending"))
 
             @unknown default:
                 purchaseError = "Purchase could not be completed."
+                PostHogService.shared.track(.purchaseFailed(errorType: "unknown"))
             }
         } catch {
             purchaseError = error.localizedDescription
+            PostHogService.shared.track(.purchaseFailed(errorType: "storekit_error"))
         }
     }
 
@@ -269,6 +273,7 @@ final class StoreKitManager: ObservableObject {
             } else {
                 if lifetimeProduct == nil {
                     productLoadError = Self.productLoadFailureMessage
+                    PostHogService.shared.track(.productLoadFailed(reason: "product_missing"))
                 } else {
                     print("[StoreKit] Reload returned 0 matching products; keeping cached product")
                 }
@@ -281,6 +286,7 @@ final class StoreKitManager: ObservableObject {
 
             if lifetimeProduct == nil {
                 productLoadError = Self.productLoadFailureMessage
+                PostHogService.shared.track(.productLoadFailed(reason: "storekit_error"))
             } else {
                 print("[StoreKit] Reload failed; keeping cached product")
             }
@@ -313,15 +319,18 @@ final class StoreKitManager: ObservableObject {
         case .verified(let transaction):
             guard transaction.productID == Self.lifetimeProductID else {
                 purchaseError = "Unexpected product purchased."
+                PostHogService.shared.track(.purchaseFailed(errorType: "unexpected_product"))
                 return
             }
 
             await refreshEntitlements()
             await transaction.finish()
             purchaseSuccessMessage = "MacCheck Pro unlocked successfully."
+            PostHogService.shared.track(.purchaseCompleted(productID: transaction.productID))
 
         case .unverified:
             purchaseError = "Purchase could not be verified."
+            PostHogService.shared.track(.purchaseFailed(errorType: "verification_failed"))
         }
     }
 }

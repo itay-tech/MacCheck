@@ -7,6 +7,8 @@ struct RootView: View {
     @ObservedObject var predictionsViewModel: PredictionsViewModel
     @ObservedObject var settingsViewModel: SettingsViewModel
     @ObservedObject var reportsViewModel: ReportsViewModel
+    @ObservedObject var analyticsConsentManager: AnalyticsConsentManager
+    @EnvironmentObject private var entitlementManager: EntitlementManager
     @State private var selection: AppSection = .dashboard
 
     var body: some View {
@@ -15,6 +17,13 @@ struct RootView: View {
         } detail: {
             detailView
                 .id(selection)
+        }
+        .analyticsConsent(
+            consentManager: analyticsConsentManager,
+            isPro: entitlementManager.isPro
+        )
+        .onChange(of: selection) { _, newSelection in
+            PostHogService.shared.track(.tabOpened(tabName: newSelection.rawValue))
         }
     }
 
@@ -63,9 +72,11 @@ struct RootView: View {
         chartsViewModel: store.chartsViewModel,
         predictionsViewModel: store.predictionsViewModel,
         settingsViewModel: store.settingsViewModel,
-        reportsViewModel: store.reportsViewModel
+        reportsViewModel: store.reportsViewModel,
+        analyticsConsentManager: store.analyticsConsentManager
     )
         .environmentObject(store.entitlementManager)
         .environmentObject(store.storeKitManager)
+        .environmentObject(store.analyticsConsentManager)
         .frame(width: 1100, height: 800)
 }

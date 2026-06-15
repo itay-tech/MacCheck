@@ -133,6 +133,7 @@ struct PaywallView: View {
     private var purchaseActions: some View {
         VStack(spacing: MacCheckTheme.Spacing.sm) {
             Button {
+                PostHogService.shared.track(.purchaseStarted)
                 Task { await storeKitManager.purchaseLifetime() }
             } label: {
                 HStack(spacing: MacCheckTheme.Spacing.sm) {
@@ -150,6 +151,7 @@ struct PaywallView: View {
             .disabled(!storeKitManager.canPurchase)
 
             Button("Restore Purchases") {
+                PostHogService.shared.track(.restorePurchases)
                 Task { await storeKitManager.restorePurchases() }
             }
             .buttonStyle(.bordered)

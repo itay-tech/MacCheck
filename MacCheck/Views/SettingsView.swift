@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @EnvironmentObject private var entitlementManager: EntitlementManager
+    @EnvironmentObject private var analyticsConsentManager: AnalyticsConsentManager
     @Environment(\.openURL) private var openURL
 
     @State private var showPaywall = false
@@ -38,7 +39,7 @@ struct SettingsView: View {
                 viewModel.refreshDataStats()
             }
         }
-        .proPaywallSheet(isPresented: $showPaywall)
+        .proPaywallSheet(isPresented: $showPaywall, source: .settings)
         .confirmationDialog(
             "Clear History?",
             isPresented: $viewModel.showClearConfirmation,
@@ -203,9 +204,13 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.md) {
                     SettingsBulletRow(text: "All health data stays on this Mac.")
                     SettingsBulletRow(text: "No cloud sync.")
-                    SettingsBulletRow(text: "No external servers.")
-                    SettingsBulletRow(text: "No analytics tracking.")
-                    SettingsBulletRow(text: "No personal information leaves the device.")
+                    SettingsBulletRow(text: "Optional anonymous usage analytics can be enabled below.")
+                    SettingsBulletRow(text: "No personal files, documents, serial numbers, or health history are collected.")
+
+                    if analyticsConsentManager.hasMadeDecision {
+                        Toggle("Share Anonymous Analytics", isOn: analyticsToggleBinding)
+                            .font(.subheadline.weight(.medium))
+                    }
 
                     Divider()
                         .padding(.vertical, MacCheckTheme.Spacing.xs)
@@ -325,6 +330,13 @@ struct SettingsView: View {
 
     // MARK: - Helpers
 
+    private var analyticsToggleBinding: Binding<Bool> {
+        Binding(
+            get: { analyticsConsentManager.isEnabled },
+            set: { analyticsConsentManager.setEnabled($0) }
+        )
+    }
+
     private func settingsSection<Content: View>(
         title: String,
         subtitle: String?,
@@ -352,5 +364,6 @@ struct SettingsView: View {
     return SettingsView(viewModel: store.settingsViewModel)
         .environmentObject(store.entitlementManager)
         .environmentObject(store.storeKitManager)
+        .environmentObject(store.analyticsConsentManager)
         .frame(width: 900, height: 900)
 }
