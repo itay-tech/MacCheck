@@ -20,13 +20,27 @@ final class BatteryService {
         }
 
         let designCapacityMah = smartBattery?.designCapacity ?? 0
-        let maxCapacityMah = resolveMaxCapacityMah(from: smartBattery)
+        let rawMaxCapacityMah = resolveMaxCapacityMah(from: smartBattery)
         let currentCapacityMah = resolveCurrentCapacityMah(from: smartBattery)
 
-        let healthPercentage = calculateHealthPercentage(
-            maxCapacityMah: maxCapacityMah,
-            designCapacityMah: designCapacityMah
-        )
+        let systemHealthPercentage = readSystemMaximumCapacityPercentage()
+        let healthPercentage: Double?
+        let maxCapacityMah: Int?
+
+        if let systemHealthPercentage {
+            healthPercentage = systemHealthPercentage
+            maxCapacityMah = deriveMaxCapacityMah(
+                fromHealthPercentage: systemHealthPercentage,
+                designCapacityMah: designCapacityMah,
+                fallback: rawMaxCapacityMah
+            )
+        } else {
+            maxCapacityMah = rawMaxCapacityMah
+            healthPercentage = calculateHealthPercentage(
+                maxCapacityMah: maxCapacityMah,
+                designCapacityMah: designCapacityMah
+            )
+        }
 
         let currentChargePercentage = calculateCurrentChargePercentage(
             normalizedChargePercentage: smartBattery?.normalizedChargePercentage,
@@ -52,6 +66,8 @@ final class BatteryService {
             hasBattery: hasBattery,
             designCapacityMah: designCapacityMah,
             maxCapacityMah: maxCapacityMah,
+            rawMaxCapacityMah: rawMaxCapacityMah,
+            systemHealthPercentage: systemHealthPercentage,
             currentCapacityMah: currentCapacityMah,
             healthPercentage: healthPercentage,
             currentChargePercentage: currentChargePercentage,
@@ -212,6 +228,63 @@ final class BatteryService {
 
     // MARK: - Capacity Resolution
 
+    /// Matches System Settings → Battery → Battery Health → Maximum Capacity.
+    private func readSystemMaximumCapacityPercentage() -> Double? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/system_profiler")
+        process.arguments = ["SPPowerDataType", "-json"]
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+
+        let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        guard
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let powerData = json["SPPowerDataType"] as? [[String: Any]]
+        else {
+            return nil
+        }
+
+        for item in powerData {
+            guard
+                let healthInfo = item["sppower_battery_health_info"] as? [String: Any],
+                let capacityString = healthInfo["sppower_battery_health_maximum_capacity"] as? String
+            else {
+                continue
+            }
+
+            let numeric = capacityString
+                .replacingOccurrences(of: "%", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let value = Double(numeric), value > 0, value <= 100 else {
+                continue
+            }
+
+            return value
+        }
+
+        return nil
+    }
+
+    private func deriveMaxCapacityMah(
+        fromHealthPercentage healthPercentage: Double,
+        designCapacityMah: Int,
+        fallback: Int?
+    ) -> Int? {
+        guard designCapacityMah > 100 else { return fallback }
+        return Int((healthPercentage / 100 * Double(designCapacityMah)).rounded())
+    }
+
     private func resolveMaxCapacityMah(from smartBattery: SmartBatteryProperties?) -> Int? {
         guard let smartBattery else { return nil }
 
@@ -320,6 +393,8 @@ final class BatteryService {
         hasBattery: Bool,
         designCapacityMah: Int,
         maxCapacityMah: Int?,
+        rawMaxCapacityMah: Int?,
+        systemHealthPercentage: Double?,
         currentCapacityMah: Int?,
         healthPercentage: Double?,
         currentChargePercentage: Double?,
@@ -338,6 +413,8 @@ final class BatteryService {
             print("AppleRawMaxCapacity: \(String(describing: smartBattery.appleRawMaxCapacity))")
             print("AppleRawCurrentCapacity: \(String(describing: smartBattery.appleRawCurrentCapacity))")
         }
+        print("System Maximum Capacity: \(String(describing: systemHealthPercentage))")
+        print("Resolved rawMaxCapacityMah: \(String(describing: rawMaxCapacityMah))")
         print("Resolved maxCapacityMah: \(String(describing: maxCapacityMah))")
         print("Resolved currentCapacityMah: \(String(describing: currentCapacityMah))")
         print("Health Percentage: \(String(describing: healthPercentage))")

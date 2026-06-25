@@ -12,7 +12,7 @@ struct PricingPlan: Equatable {
 enum PricingPlanCatalog {
     static let lifetime = PricingPlan(
         title: "MacCheck Pro Lifetime",
-        price: "$19.99",
+        price: "$9.99",
         subtitle: "One-time purchase",
         productID: StoreKitManager.lifetimeProductID,
         includedFeatures: [

@@ -127,19 +127,32 @@ final class HistoryRepository {
         }
 
         guard let mockURL = mockFileURL(named: filename) else {
+#if DEBUG
+            print("[History] Mock file not found: \(filename)")
+            print("[History] Expected bundled resource or MacCheck/MockData/\(filename)")
+#endif
             throw HistoryRepositoryError.mockFileNotFound
         }
+
+#if DEBUG
+        print("[History] Loading mock data from: \(mockURL.path)")
+#endif
 
         let data = try Data(contentsOf: mockURL)
         guard !data.isEmpty else { return [] }
 
-        return try decodeSnapshotData(data)
+        let snapshots = try decodeSnapshotData(data)
+#if DEBUG
+        print("[History] Loaded \(snapshots.count) mock snapshots (\(filename))")
+#endif
+        return snapshots
     }
 
     private func mockFileURL(named filename: String) -> URL? {
         let resourceName = (filename as NSString).deletingPathExtension
         let resourceExtension = (filename as NSString).pathExtension.isEmpty ? "json" : (filename as NSString).pathExtension
 
+        // Bundled with the app (MacCheck/MockData → Copy Bundle Resources).
         if let bundledURL = Bundle.main.url(
             forResource: resourceName,
             withExtension: resourceExtension,
@@ -152,14 +165,26 @@ final class HistoryRepository {
             return bundledURL
         }
 
-        let projectMockURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("MockData/\(filename)")
+        // Xcode run fallback — only works if sandbox can read the dev tree.
+        let devCandidates = [
+            URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("MockData/\(filename)"),
+            URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("MockData/\(filename)"),
+            URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("MacCheckTests/Fixtures/MockData/\(filename)")
+        ]
 
-        if fileManager.fileExists(atPath: projectMockURL.path) {
-            return projectMockURL
+        for url in devCandidates where fileManager.fileExists(atPath: url.path) {
+            return url
         }
 
         return nil

@@ -133,8 +133,15 @@ final class HistoryService {
         from repository: HistoryRepository,
         calendar: Calendar
     ) -> [HealthSnapshot] {
-        let loaded = (try? repository.loadSnapshots()) ?? []
-        return deduplicateByCalendarDay(loaded, calendar: calendar)
+        do {
+            let loaded = try repository.loadSnapshots()
+            return deduplicateByCalendarDay(loaded, calendar: calendar)
+        } catch {
+#if DEBUG
+            print("[History] Failed to load snapshots: \(error.localizedDescription)")
+#endif
+            return []
+        }
     }
 
     private static func deduplicateByCalendarDay(

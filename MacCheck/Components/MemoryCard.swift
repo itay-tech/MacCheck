@@ -8,7 +8,7 @@ struct MemoryCard: View {
         MetricKPICard(
             icon: "memorychip.fill",
             title: "Memory",
-            tint: pressureColor,
+            tint: HealthScoreColor.color(for: memoryScore),
             badge: memory.status.displayName,
             primaryValue: "\(Int((memory.usedPercentage * 100).rounded()))",
             primarySuffix: "%",
@@ -23,14 +23,6 @@ struct MemoryCard: View {
                 (label: "Total", value: ByteFormatter.string(from: memory.totalMemoryBytes))
             ]
         )
-    }
-
-    private var pressureColor: Color {
-        switch memory.status {
-        case .healthy: .green
-        case .warning: .orange
-        case .critical: .red
-        }
     }
 }
 

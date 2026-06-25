@@ -2,7 +2,7 @@ import Foundation
 
 enum AppLinks {
     /// Placeholder — replace with the production privacy policy URL before release.
-    static let privacyPolicy = URL(string: "https://raytech.co.il/mac-check-privacy")!
+    static let privacyPolicy = URL(string: "https://raytech.co.il/privacy/maccheck")!
 
     /// Placeholder support email — replace before release.
     static let supportEmail = "itay@raytech.co.il"
@@ -24,7 +24,7 @@ enum AppLinks {
     }
 
     /// Contact page on the MacCheck site.
-    private static let contactPageURL = URL(string: "https://raytech.co.il/mac-check-privacy/#Contact")!
+    private static let contactPageURL = URL(string: "https://raytech.co.il/privacy/maccheck#contact")!
 
     static var contactSupportURL: URL { contactPageURL }
 

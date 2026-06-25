@@ -16,7 +16,6 @@ struct ChartsView: View {
                     )
 
                     HealthScoreLineChart(viewModel: viewModel.charts.healthScore)
-                        .equatable()
 
                     proChartsSection
                 }
@@ -52,13 +51,9 @@ struct ChartsView: View {
             FeatureGate(feature: .advancedCharts, showPaywall: $showPaywall) {
                 LazyVStack(alignment: .leading, spacing: MacCheckTheme.Spacing.xxl) {
                     BatteryHealthLineChart(viewModel: viewModel.charts.batteryHealth)
-                        .equatable()
                     StorageUsageLineChart(viewModel: viewModel.charts.storageUsage)
-                        .equatable()
                     SwapUsageLineChart(viewModel: viewModel.charts.swapUsage)
-                        .equatable()
                     ThermalHistoryChart(viewModel: viewModel.charts.thermalHistory)
-                        .equatable()
                 }
             }
         }

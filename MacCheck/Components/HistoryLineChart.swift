@@ -1,13 +1,19 @@
 import Charts
 import SwiftUI
 
-struct HistoryLineChart: View, Equatable {
+struct HistoryLineChart: View {
     let viewModel: HistoryLineChartViewModel
 
-    @State private var hoveredDate: Date?
-    @State private var hoveredPoint: ChartRenderPoint?
+    @State private var selectedDate: Date?
 
     private let chartHeight: CGFloat = 240
+
+    private var selectedPoint: ChartRenderPoint? {
+        guard let selectedDate else { return nil }
+        return viewModel.renderPoints.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
 
     var body: some View {
         Group {
@@ -23,10 +29,6 @@ struct HistoryLineChart: View, Equatable {
         .transaction { transaction in
             transaction.animation = nil
         }
-    }
-
-    static func == (lhs: HistoryLineChart, rhs: HistoryLineChart) -> Bool {
-        lhs.viewModel == rhs.viewModel
     }
 
     // MARK: - Content
@@ -71,18 +73,23 @@ struct HistoryLineChart: View, Equatable {
                         x: .value("Date", point.date),
                         y: .value("Value", point.yValue)
                     )
-                    .symbolSize(hoveredPoint?.id == point.id ? 90 : 56)
+                    .symbolSize(selectedPoint?.id == point.id ? 90 : 56)
                     .foregroundStyle(pointColor(for: point))
                 }
-            } else if let hoveredPoint {
+            } else if let selectedPoint {
                 PointMark(
-                    x: .value("Date", hoveredPoint.date),
-                    y: .value("Value", hoveredPoint.yValue)
+                    x: .value("Date", selectedPoint.date),
+                    y: .value("Value", selectedPoint.yValue)
                 )
                 .symbolSize(90)
-                .foregroundStyle(pointColor(for: hoveredPoint))
+                .foregroundStyle(pointColor(for: selectedPoint))
+
+                RuleMark(x: .value("Date", selectedPoint.date))
+                    .foregroundStyle(Color.primary.opacity(0.15))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
         }
+        .chartXSelection(value: $selectedDate)
         .chartYScale(domain: viewModel.yAxisDomain)
         .chartYAxis {
             if let ticks = viewModel.yAxisTickValues {
@@ -120,76 +127,27 @@ struct HistoryLineChart: View, Equatable {
         }
         .chartOverlay { proxy in
             GeometryReader { geometry in
-                Rectangle()
-                    .fill(.clear)
-                    .contentShape(Rectangle())
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case .active(let location):
-                            updateHover(at: location, proxy: proxy, geometry: geometry)
-                        case .ended:
-                            clearHoverIfNeeded()
-                        }
-                    }
-            }
-        }
-        .overlay(alignment: .topLeading) {
-            if let hoveredPoint {
-                ChartHoverTooltip(
-                    date: hoveredPoint.date,
-                    value: hoveredPoint.displayValue,
-                    accentColor: pointColor(for: hoveredPoint)
-                )
-                .padding(.top, MacCheckTheme.Spacing.sm)
-                .padding(.leading, MacCheckTheme.Spacing.sm)
-                .allowsHitTesting(false)
+                if let selectedPoint,
+                   let plotFrameAnchor = proxy.plotFrame,
+                   let plotX = proxy.position(forX: selectedPoint.date) {
+                    let plotFrame = geometry[plotFrameAnchor]
+                    let tooltipX = min(
+                        max(plotFrame.origin.x + plotX, plotFrame.minX + 80),
+                        plotFrame.maxX - 80
+                    )
+
+                    ChartHoverTooltip(
+                        date: selectedPoint.date,
+                        value: selectedPoint.displayValue,
+                        accentColor: pointColor(for: selectedPoint)
+                    )
+                    .position(x: tooltipX, y: plotFrame.minY + 24)
+                    .allowsHitTesting(false)
+                }
             }
         }
         .frame(height: chartHeight)
         .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Hover
-
-    private func updateHover(
-        at location: CGPoint,
-        proxy: ChartProxy,
-        geometry: GeometryProxy
-    ) {
-        guard let date = date(at: location, proxy: proxy, geometry: geometry),
-              let nearest = nearestRenderPoint(to: date) else {
-            clearHoverIfNeeded()
-            return
-        }
-
-        guard hoveredPoint?.id != nearest.id else { return }
-
-        hoveredDate = nearest.date
-        hoveredPoint = nearest
-    }
-
-    private func clearHoverIfNeeded() {
-        guard hoveredPoint != nil else { return }
-        hoveredDate = nil
-        hoveredPoint = nil
-    }
-
-    private func nearestRenderPoint(to date: Date) -> ChartRenderPoint? {
-        viewModel.renderPoints.min {
-            abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
-        }
-    }
-
-    private func date(
-        at location: CGPoint,
-        proxy: ChartProxy,
-        geometry: GeometryProxy
-    ) -> Date? {
-        guard let plotFrameAnchor = proxy.plotFrame else { return nil }
-        let plotFrame = geometry[plotFrameAnchor]
-        let xPosition = location.x - plotFrame.origin.x
-        guard xPosition >= 0, xPosition <= plotFrame.width else { return nil }
-        return proxy.value(atX: xPosition, as: Date.self)
     }
 
     // MARK: - Empty / Unavailable

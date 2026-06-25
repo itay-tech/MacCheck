@@ -73,16 +73,12 @@ Switch back to `.real` when finished testing.
 
 `HistoryRepository` looks for mock JSON in this order:
 
-1. App bundle: `MockData/history_*.json`
-2. Project folder: `MockData/history_*.json` (useful when running from Xcode before bundling)
+1. App bundle: `MockData/history_*.json` or flat `history_*.json` in Resources
+2. Dev tree: `MacCheck/MockData/history_*.json` (source folder, bundled on build)
+3. Project root: `MockData/history_*.json`
+4. Test fixtures: `MacCheckTests/Fixtures/MockData/history_*.json`
 
-Test fixtures also exist under:
-
-```
-MacCheckTests/Fixtures/MockData/
-```
-
-Those files are for unit tests, not automatic app runtime loading.
+**Important:** Mock files must live in `MacCheck/MockData/` so Xcode bundles them into the app. A copy at the project root alone is not enough — the sandbox blocks reading it at runtime.
 
 ### Recommendation
 
