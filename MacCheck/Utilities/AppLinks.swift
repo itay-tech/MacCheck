@@ -5,10 +5,10 @@ enum AppLinks {
     static let privacyPolicy = URL(string: "https://raytech.co.il/privacy/maccheck")!
 
     /// Placeholder support email — replace before release.
-    static let supportEmail = "itay@raytech.co.il"
+    static let supportEmail = "info@raytech.co.il"
 
     /// Placeholder issue reporting email — replace before release.
-    static let issueEmail = "itay@raytech.co.il"
+    static let issueEmail = "info@raytech.co.il"
 
     /// Placeholder Mac App Store product page — replace with the live URL before release.
     static let appStorePage = URL(string: "https://apps.apple.com/app/maccheck/id0000000000")!
@@ -18,10 +18,8 @@ enum AppLinks {
         URL(string: "macappstore://showUpdatesPage")!
     }
 
-    /// Opens the Mac App Store review sheet for MacCheck.
-    static var rateAppURL: URL {
-        URL(string: "macappstore://apps.apple.com/app/id0000000000?action=write-review") ?? appStorePage
-    }
+    /// MacCheck product page on the Raytech site.
+    static let aboutMacCheck = URL(string: "https://raytech.co.il/products/maccheck")!
 
     /// Contact page on the MacCheck site.
     private static let contactPageURL = URL(string: "https://raytech.co.il/privacy/maccheck#contact")!

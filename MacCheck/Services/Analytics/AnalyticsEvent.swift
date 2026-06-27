@@ -19,6 +19,8 @@ enum AnalyticsEvent {
     case purchaseFailed(errorType: String)
     case restorePurchases
     case productLoadFailed(reason: String)
+    case memoryLiveEnabled
+    case memoryLiveDisabled
 
     var name: String {
         switch self {
@@ -31,6 +33,8 @@ enum AnalyticsEvent {
         case .purchaseFailed: "purchase_failed"
         case .restorePurchases: "restore_purchases"
         case .productLoadFailed: "product_load_failed"
+        case .memoryLiveEnabled: "memory_live_enabled"
+        case .memoryLiveDisabled: "memory_live_disabled"
         }
     }
 
@@ -54,6 +58,8 @@ enum AnalyticsEvent {
             [:]
         case .productLoadFailed(let reason):
             ["reason": reason]
+        case .memoryLiveEnabled, .memoryLiveDisabled:
+            [:]
         }
     }
 }

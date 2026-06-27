@@ -11,6 +11,8 @@ struct MetricKPICard: View {
     let caption: String
     var help: DashboardHelpText? = nil
     var subsystemScore: Int? = nil
+    var animatesValueChanges = false
+    var headerAccessory: AnyView? = nil
     let progress: Double
     let footerMetrics: [(label: String, value: String)]
 
@@ -25,6 +27,10 @@ struct MetricKPICard: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
+                        .modifier(AnimatedMetricValueModifier(
+                            value: primaryValue,
+                            enabled: animatesValueChanges
+                        ))
 
                     if let primarySuffix {
                         Text(primarySuffix)
@@ -38,6 +44,10 @@ struct MetricKPICard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .modifier(AnimatedMetricValueModifier(
+                        value: caption,
+                        enabled: animatesValueChanges
+                    ))
 
                 if let subsystemScore {
                     Text("Score: \(subsystemScore)/100")
@@ -49,6 +59,7 @@ struct MetricKPICard: View {
             ProgressView(value: min(max(progress, 0), 1))
                 .tint(tint)
                 .frame(height: 6)
+                .animation(animatesValueChanges ? .easeInOut(duration: 0.25) : nil, value: progress)
 
             Spacer(minLength: 0)
 
@@ -76,6 +87,10 @@ struct MetricKPICard: View {
 
             Spacer(minLength: 0)
 
+            if let headerAccessory {
+                headerAccessory
+            }
+
             Text(badge)
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 8)
@@ -84,6 +99,10 @@ struct MetricKPICard: View {
                 .foregroundStyle(tint)
                 .clipShape(Capsule())
                 .lineLimit(1)
+                .modifier(AnimatedMetricValueModifier(
+                    value: badge,
+                    enabled: animatesValueChanges
+                ))
         }
     }
 
@@ -117,11 +136,30 @@ struct MetricKPICard: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(label.trimmingCharacters(in: .whitespaces).isEmpty ? .clear : .primary)
                 .lineLimit(1)
+                .modifier(AnimatedMetricValueModifier(
+                    value: value,
+                    enabled: animatesValueChanges
+                ))
         }
         .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
         .padding(.horizontal, MacCheckTheme.Spacing.sm)
         .padding(.vertical, MacCheckTheme.Spacing.xs)
         .background(MacCheckTheme.tertiaryFill)
         .clipShape(RoundedRectangle(cornerRadius: MacCheckTheme.Radius.sm, style: .continuous))
+    }
+}
+
+private struct AnimatedMetricValueModifier: ViewModifier {
+    let value: String
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .contentTransition(.numericText())
+                .animation(.easeInOut(duration: 0.25), value: value)
+        } else {
+            content
+        }
     }
 }

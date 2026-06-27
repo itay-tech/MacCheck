@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 struct RootView: View {
@@ -9,6 +10,7 @@ struct RootView: View {
     @ObservedObject var reportsViewModel: ReportsViewModel
     @ObservedObject var analyticsConsentManager: AnalyticsConsentManager
     @EnvironmentObject private var entitlementManager: EntitlementManager
+    @Environment(\.requestReview) private var requestReview
     @State private var selection: AppSection = .dashboard
 
     var body: some View {
@@ -24,6 +26,10 @@ struct RootView: View {
         )
         .onChange(of: selection) { _, newSelection in
             PostHogService.shared.track(.tabOpened(tabName: newSelection.rawValue))
+
+            if AppStoreReviewManager.shared.recordNavigation() {
+                requestReview()
+            }
         }
     }
 

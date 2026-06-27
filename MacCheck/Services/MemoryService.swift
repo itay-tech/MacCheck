@@ -9,10 +9,10 @@ final class MemoryService {
     private static let isDebugLoggingEnabled = false
     #endif
 
-    func fetchMemoryInfo() -> MemoryInfo {
+    func fetchMemoryInfo(preferFastSwapRead: Bool = false) -> MemoryInfo {
         let totalMemoryBytes = Int64(ProcessInfo.processInfo.physicalMemory)
         let vmStats = readVMStatistics()
-        let swapUsedBytes = readSwapUsage()
+        let swapUsedBytes = preferFastSwapRead ? readSwapUsageFromStruct() : readSwapUsage()
         let systemMemoryPressure = readSystemMemoryPressure()
 
         let pageSize = Int64(vm_page_size)

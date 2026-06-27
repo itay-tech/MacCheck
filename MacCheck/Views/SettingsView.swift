@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -5,6 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject private var entitlementManager: EntitlementManager
     @EnvironmentObject private var analyticsConsentManager: AnalyticsConsentManager
     @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReview
 
     @State private var showPaywall = false
     @State private var showExportPlaceholder = false
@@ -20,11 +22,11 @@ struct SettingsView: View {
                     )
 
                     proStatusSection
-                    appInformationSection
                     privacySection
                     dataManagementSection
                     supportSection
                     aboutSection
+                    appInformationSection
                 }
                 .padding(MacCheckTheme.Spacing.xl)
                 .frame(maxWidth: 980)
@@ -98,10 +100,9 @@ struct SettingsView: View {
 
                     SettingsActionRow(
                         title: "Rate MacCheck",
-                        systemImage: "star",
-                        showsExternalIcon: true
+                        systemImage: "star"
                     ) {
-                        openURL(AppLinks.rateAppURL)
+                        requestReview()
                     }
                 }
             }
@@ -320,10 +321,17 @@ struct SettingsView: View {
             systemImage: "desktopcomputer"
         ) {
             SettingsCard {
-                Text("MacCheck helps monitor battery health, storage usage, memory pressure and overall Mac performance over time.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: MacCheckTheme.Spacing.md) {
+                    Text("MacCheck helps monitor battery health, storage usage, memory pressure and overall Mac performance over time.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button("About MacCheck") {
+                        openURL(AppLinks.aboutMacCheck)
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
     }
